@@ -14,6 +14,7 @@ import productRouter from './route/product.route.js'
 import cartRouter from './route/cart.route.js'
 import addressRouter from './route/address.route.js'
 import orderRouter from './route/order.route.js'
+import path from 'path'
 
 const app = express()
 app.use(cors({
@@ -29,6 +30,11 @@ app.use(helmet({
 
 const PORT = process.env.PORT || 8080 
 
+// Serve static files from the React app
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../client/dist')))
+}
+
 app.get("/",(request,response)=>{
     ///server to client
     response.json({
@@ -36,6 +42,7 @@ app.get("/",(request,response)=>{
     })
 })
 
+// API routes
 app.use('/api/user',userRouter)
 app.use("/api/category",categoryRouter)
 app.use("/api/file",uploadRouter)
@@ -44,6 +51,13 @@ app.use("/api/product",productRouter)
 app.use("/api/cart",cartRouter)
 app.use("/api/address",addressRouter)
 app.use('/api/order',orderRouter)
+
+// Serve React app for all non-API routes
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (request, response) => {
+        response.sendFile(path.join(__dirname, '../client/dist/index.html'))
+    })
+}
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{
