@@ -56,10 +56,16 @@ export const pricewithDiscount = (price,dis = 1)=>{
 
 export async function paymentController(request,response){
     try {
+        console.log("🔥 Payment controller called");
+        console.log("🔥 Stripe secret key:", process.env.STRIPE_SECRET_KEY ? "Present" : "Missing");
+        
         const userId = request.userId // auth middleware 
         const { list_items, totalAmt, addressId,subTotalAmt } = request.body 
 
+        console.log("🔥 Request data:", { userId, list_items: list_items?.length, totalAmt, addressId });
+
         const user = await UserModel.findById(userId)
+        console.log("🔥 User found:", user?.email);
 
         const line_items  = list_items.map(item =>{
             return{
@@ -96,7 +102,9 @@ export async function paymentController(request,response){
             cancel_url : `${process.env.FRONTEND_URL}/cancel`
         }
 
+        console.log("🔥 Creating Stripe session...");
         const session = await Stripe.checkout.sessions.create(params)
+        console.log("🔥 Stripe session created:", session.id);
 
         return response.status(200).json(session)
 
@@ -150,14 +158,19 @@ export async function webhookStripe(request,response){
     const event = request.body;
     const endPointSecret = process.env.STRIPE_ENPOINT_WEBHOOK_SECRET_KEY
 
-    console.log("event",event)
+    console.log("🔥 WEBHOOK EVENT RECEIVED:", event.type);
+    console.log("🔥 EVENT DATA:", JSON.stringify(event.data.object, null, 2));
 
     // Handle the event
   switch (event.type) {
     case 'checkout.session.completed':
+      console.log("🔥 PAYMENT COMPLETED - Processing order...");
       const session = event.data.object;
       const lineItems = await Stripe.checkout.sessions.listLineItems(session.id)
       const userId = session.metadata.userId
+      console.log("🔥 USER ID:", userId);
+      console.log("🔥 SESSION METADATA:", session.metadata);
+      
       const orderProduct = await getOrderProductItems(
         {
             lineItems : lineItems,
@@ -167,18 +180,24 @@ export async function webhookStripe(request,response){
             payment_status : session.payment_status,
         })
     
+      console.log("🔥 ORDER PRODUCTS TO CREATE:", orderProduct);
+      
       const order = await OrderModel.insertMany(orderProduct)
+      console.log("🔥 ORDERS CREATED:", order.length, "orders");
+      console.log("🔥 ORDER DETAILS:", JSON.stringify(order, null, 2));
 
-        console.log(order)
         if(Boolean(order[0])){
+            console.log("🔥 CLEARING USER CART...");
             const removeCartItems = await  UserModel.findByIdAndUpdate(userId,{
                 shopping_cart : []
             })
+            console.log("🔥 USER CART CLEARED");
             const removeCartProductDB = await CartProductModel.deleteMany({ userId : userId})
+            console.log("🔥 CART PRODUCTS DELETED FROM DB");
         }
       break;
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      console.log(`🔥 UNHANDLED EVENT TYPE ${event.type}`);
   }
 
   // Return a response to acknowledge receipt of the event
@@ -189,8 +208,11 @@ export async function webhookStripe(request,response){
 export async function getOrderDetailsController(request,response){
     try {
         const userId = request.userId // order id
+        console.log("🔥 FETCHING ORDERS FOR USER:", userId);
 
         const orderlist = await OrderModel.find({ userId : userId }).sort({ createdAt : -1 }).populate('delivery_address')
+        console.log("🔥 ORDERS FOUND:", orderlist.length);
+        console.log("🔥 ORDER LIST:", JSON.stringify(orderlist, null, 2));
 
         return response.json({
             message : "order list",
@@ -199,6 +221,7 @@ export async function getOrderDetailsController(request,response){
             success : true
         })
     } catch (error) {
+        console.error("🔥 ERROR FETCHING ORDERS:", error);
         return response.status(500).json({
             message : error.message || error,
             error : true,

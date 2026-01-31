@@ -5,6 +5,8 @@ import { useSelector } from 'react-redux'
 import { valideURLConvert } from '../utils/valideURLConvert'
 import {Link, useNavigate} from 'react-router-dom'
 import CategoryWiseProductDisplay from '../components/CategoryWiseProductDisplay'
+import { handleImageError } from '../utils/ImageFallback'
+import { getCategoryImage } from '../utils/DefaultImages'
 
 const Home = () => {
   const loadingCategory = useSelector(state => state.product.loadingCategory)
@@ -35,43 +37,26 @@ const Home = () => {
               <img
                 src={banner}
                 className='w-full h-full hidden lg:block'
-                alt='banner' 
+                alt='banner'
+                onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.parentElement.innerHTML = '<div class="w-full h-full bg-blue-100 flex items-center justify-center text-gray-500">Banner Image Not Available</div>'
+                }}
               />
               <img
                 src={bannerMobile}
                 className='w-full h-full lg:hidden'
-                alt='banner' 
+                alt='banner mobile'
+                onError={(e) => {
+                    e.target.style.display = 'none'
+                    e.target.parentElement.innerHTML = '<div class="w-full h-full bg-blue-100 flex items-center justify-center text-gray-500">Mobile Banner Not Available</div>'
+                }}
               />
           </div>
       </div>
       
-      <div className='container mx-auto px-4 my-2 grid grid-cols-5 md:grid-cols-8 lg:grid-cols-10  gap-2'>
-          {
-            loadingCategory ? (
-              new Array(12).fill(null).map((c,index)=>{
-                return(
-                  <div key={index+"loadingcategory"} className='bg-white rounded p-4 min-h-36 grid gap-2 shadow animate-pulse'>
-                    <div className='bg-blue-100 min-h-24 rounded'></div>
-                    <div className='bg-blue-100 h-8 rounded'></div>
-                  </div>
-                )
-              })
-            ) : (
-              categoryData.map((cat,index)=>{
-                return(
-                  <div key={cat._id+"displayCategory"} className='w-full h-full' onClick={()=>handleRedirectProductListpage(cat._id,cat.name)}>
-                    <div>
-                        <img 
-                          src={cat.image}
-                          className='w-full h-full object-scale-down'
-                        />
-                    </div>
-                  </div>
-                )
-              })
-              
-            )
-          }
+      <div className='container mx-auto px-4 my-2'>
+        {/* Category images section removed */}
       </div>
 
       {/***display category product */}

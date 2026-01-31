@@ -14,12 +14,18 @@ const CheckoutPage = () => {
   const { notDiscountTotalPrice, totalPrice, totalQty, fetchCartItem,fetchOrder } = useGlobalContext()
   const [openAddress, setOpenAddress] = useState(false)
   const addressList = useSelector(state => state.addresses.addressList)
-  const [selectAddress, setSelectAddress] = useState(0)
+  const [selectAddress, setSelectAddress] = useState(-1) // Start with -1 (no selection)
   const cartItemsList = useSelector(state => state.cartItem.cart)
   const navigate = useNavigate()
 
   const handleCashOnDelivery = async() => {
       try {
+          // Validate address selection
+          if(selectAddress === -1 || !addressList[selectAddress]?._id){
+              toast.error("Please select a delivery address")
+              return
+          }
+
           const response = await Axios({
             ...SummaryApi.CashOnDeliveryOrder,
             data : {
@@ -54,6 +60,12 @@ const CheckoutPage = () => {
 
   const handleOnlinePayment = async()=>{
     try {
+        // Validate address selection
+        if(selectAddress === -1 || !addressList[selectAddress]?._id){
+            toast.error("Please select a delivery address")
+            return
+        }
+
         toast.loading("Loading...")
         const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY
         const stripePromise = await loadStripe(stripePublicKey)
@@ -87,15 +99,22 @@ const CheckoutPage = () => {
       <div className='container mx-auto p-4 flex flex-col lg:flex-row w-full gap-5 justify-between'>
         <div className='w-full'>
           {/***address***/}
-          <h3 className='text-lg font-semibold'>Choose your address</h3>
+          <h3 className='text-lg font-semibold'>Choose your address <span className='text-red-500'>*</span></h3>
           <div className='bg-white p-2 grid gap-4'>
             {
               addressList.map((address, index) => {
                 return (
                   <label htmlFor={"address" + index} className={!address.status && "hidden"}>
-                    <div className='border rounded p-3 flex gap-3 hover:bg-blue-50'>
+                    <div className={`border rounded p-3 flex gap-3 hover:bg-blue-50 cursor-pointer ${selectAddress == index ? 'border-green-500 bg-green-50' : 'border-gray-200'}`}>
                       <div>
-                        <input id={"address" + index} type='radio' value={index} onChange={(e) => setSelectAddress(e.target.value)} name='address' />
+                        <input 
+                          id={"address" + index} 
+                          type='radio' 
+                          value={index} 
+                          onChange={(e) => setSelectAddress(parseInt(e.target.value))} 
+                          name='address' 
+                          checked={selectAddress == index}
+                        />
                       </div>
                       <div>
                         <p>{address.address_line}</p>
@@ -141,9 +160,33 @@ const CheckoutPage = () => {
             </div>
           </div>
           <div className='w-full flex flex-col gap-4'>
-            <button className='py-2 px-4 bg-green-600 hover:bg-green-700 rounded text-white font-semibold' onClick={handleOnlinePayment}>Online Payment</button>
+            <button 
+              className={`py-2 px-4 font-semibold rounded ${
+                selectAddress !== -1 && addressList[selectAddress]?._id 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`} 
+              onClick={handleOnlinePayment}
+              disabled={selectAddress === -1 || !addressList[selectAddress]?._id}
+            >
+              Online Payment
+            </button>
 
-            <button className='py-2 px-4 border-2 border-green-600 font-semibold text-green-600 hover:bg-green-600 hover:text-white' onClick={handleCashOnDelivery}>Cash on Delivery</button>
+            <button 
+              className={`py-2 px-4 font-semibold rounded ${
+                selectAddress !== -1 && addressList[selectAddress]?._id 
+                  ? 'border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white' 
+                  : 'border-2 border-gray-300 text-gray-400 cursor-not-allowed'
+              }`} 
+              onClick={handleCashOnDelivery}
+              disabled={selectAddress === -1 || !addressList[selectAddress]?._id}
+            >
+              Cash on Delivery
+            </button>
+            
+            {(selectAddress === -1 || !addressList[selectAddress]?._id) && (
+              <p className='text-red-500 text-sm text-center'>Please select a delivery address to continue</p>
+            )}
           </div>
         </div>
       </div>

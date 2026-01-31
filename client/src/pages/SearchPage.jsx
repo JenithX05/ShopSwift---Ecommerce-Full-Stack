@@ -15,15 +15,23 @@ const SearchPage = () => {
   const [page,setPage] = useState(1)
   const [totalPage,setTotalPage] = useState(1)
   const params = useLocation()
-  const searchText = params?.search?.slice(3)
+  const searchText = params?.search ? params.search.slice(3) : ''
 
   const fetchData = async() => {
     try {
       setLoading(true)
+      
+      // Don't search if searchText is empty or less than 2 characters
+      if (!searchText || searchText.trim().length < 2) {
+        setData([])
+        setLoading(false)
+        return
+      }
+      
         const response = await Axios({
             ...SummaryApi.searchProduct,
             data : {
-              search : searchText ,
+              search : searchText.trim() ,
               page : page,
             }
         })
@@ -70,8 +78,9 @@ const SearchPage = () => {
 
         <InfiniteScroll
               dataLength={data.length}
-              hasMore={true}
+              hasMore={totalPage > page}
               next={handleFetchMore}
+              loader={<div className="flex justify-center p-4">Loading more products...</div>}
         >
         <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 py-4 gap-4'>
               {

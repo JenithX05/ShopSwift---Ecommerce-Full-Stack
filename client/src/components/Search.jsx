@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { IoSearch } from "react-icons/io5";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { TypeAnimation } from 'react-type-animation';
@@ -11,24 +11,35 @@ const Search = () => {
     const location = useLocation()
     const [isSearchPage,setIsSearchPage] = useState(false)
     const [ isMobile ] = useMobile()
+    const [searchValue, setSearchValue] = useState('')
     const params = useLocation()
-    const searchText = params.search.slice(3)
+    const searchText = params.search ? params.search.slice(3) : ''
 
     useEffect(()=>{
         const isSearch = location.pathname === "/search"
         setIsSearchPage(isSearch)
-    },[location])
-
+        if (isSearch && searchText) {
+            setSearchValue(searchText)
+        }
+    },[location, searchText])
 
     const redirectToSearchPage = ()=>{
         navigate("/search")
     }
 
-    const handleOnChange = (e)=>{
+    const handleOnChange = useCallback((e)=>{
         const value = e.target.value
-        const url = `/search?q=${value}`
-        navigate(url)
-    }
+        setSearchValue(value)
+        
+        // Only navigate if search has meaningful content (2+ characters)
+        if (value.trim().length >= 2) {
+            const url = `/search?q=${encodeURIComponent(value.trim())}`
+            navigate(url)
+        } else if (value.trim().length === 0) {
+            // Navigate to search page without query if empty
+            navigate("/search")
+        }
+    }, [navigate])
 
   return (
     <div className='w-full  min-w-[300px] lg:min-w-[420px] h-11 lg:h-12 rounded-lg border overflow-hidden flex items-center text-neutral-500 bg-slate-50 group focus-within:border-primary-200 '>
@@ -83,7 +94,7 @@ const Search = () => {
                             type='text'
                             placeholder='Search for atta dal and more.'
                             autoFocus
-                            defaultValue={searchText}
+                            value={searchValue}
                             className='bg-transparent w-full h-full outline-none'
                             onChange={handleOnChange}
                         />

@@ -67,9 +67,10 @@ export const getProductController = async(request,response)=>{
         }
 
         const query = search ? {
-            $text : {
-                $search : search
-            }
+            $or: [
+                { name: { $regex: search.trim(), $options: 'i' } },
+                { description: { $regex: search.trim(), $options: 'i' } }
+            ]
         } : {}
 
         const skip = (page - 1) * limit
@@ -269,6 +270,8 @@ export const searchProduct = async(request,response)=>{
     try {
         let { search, page , limit } = request.body 
 
+        console.log("Search request received:", { search, page, limit })
+
         if(!page){
             page = 1
         }
@@ -276,11 +279,18 @@ export const searchProduct = async(request,response)=>{
             limit  = 10
         }
 
-        const query = search ? {
-            $text : {
-                $search : search
+        let query = {}
+        
+        if(search && search.trim().length >= 2){
+            // Use regex search instead of text search
+            query = {
+                $or: [
+                    { name: { $regex: search.trim(), $options: 'i' } },
+                    { description: { $regex: search.trim(), $options: 'i' } }
+                ]
             }
-        } : {}
+            console.log("Search query:", query)
+        }
 
         const skip = ( page - 1) * limit
 
@@ -288,6 +298,8 @@ export const searchProduct = async(request,response)=>{
             ProductModel.find(query).sort({ createdAt  : -1 }).skip(skip).limit(limit).populate('category subCategory'),
             ProductModel.countDocuments(query)
         ])
+
+        console.log("Search results:", { dataCount: dataCount, dataLength: data.length })
 
         return response.json({
             message : "Product data",
@@ -302,6 +314,7 @@ export const searchProduct = async(request,response)=>{
 
 
     } catch (error) {
+        console.error("Search error:", error)
         return response.status(500).json({
             message : error.message || error,
             error : true,

@@ -21,8 +21,14 @@ function App() {
   
 
   const fetchUser = async()=>{
-      const userData = await fetchUserDetails()
-      dispatch(setUserDetails(userData.data))
+      try {
+          const userData = await fetchUserDetails()
+          if(userData && userData.data) {
+              dispatch(setUserDetails(userData.data))
+          }
+      } catch (error) {
+          console.log("User not authenticated or error fetching user details")
+      }
   }
 
   const fetchCategory = async()=>{

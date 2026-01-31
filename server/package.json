@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "seed:categories": "node seed/seedCategories.js",
+    "seed:images": "node seed/seedImages.js",
+    "seed:all": "node seed/seedCategories.js && node seed/seedImages.js",
+    "seed:fix": "node seed/fixImages.js"
   },
   "author": "",
   "license": "ISC",

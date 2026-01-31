@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import { useState } from 'react'
 import { useGlobalContext } from '../provider/GlobalProvider'
 import AddToCartButton from './AddToCartButton'
+import { handleImageError } from '../utils/ImageFallback'
+import { getProductImage } from '../utils/DefaultImages'
 
 const CardProduct = ({data}) => {
     const url = `/product/${valideURLConvert(data.name)}-${data._id}`
@@ -19,8 +21,10 @@ const CardProduct = ({data}) => {
     <Link to={url} className='border py-2 lg:p-4 grid gap-1 lg:gap-3 min-w-36 lg:min-w-52 rounded cursor-pointer bg-white' >
       <div className='min-h-20 w-full max-h-24 lg:max-h-32 rounded overflow-hidden'>
             <img 
-                src={data.image[0]}
+                src={getProductImage(data.image)}
                 className='w-full h-full object-scale-down lg:scale-125'
+                onError={handleImageError}
+                alt={data.name}
             />
       </div>
       <div className='flex items-center gap-1'>
